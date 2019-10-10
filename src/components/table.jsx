@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { SSL_OP_SSLEAY_080_CLIENT_DH_BUG } from "constants";
 
 class Table extends Component {
   state = {
@@ -33,8 +32,8 @@ class Table extends Component {
       "reg15",
       "dec"
     ],
-    bytes: [{ id: 0, value: 6 }, { id: 1, value: 0 }, { id: 2, value: 9 }],
-    result: { value: 1 }
+    bytes: [{ id: 0, value: 6 }, { id: 1, value: 1 }, { id: 2, value: 9 }],
+    result: { value: 0 }
   };
   bgColors = {
     Default: "#81b71b",
@@ -45,98 +44,108 @@ class Table extends Component {
     Yellow: "#F6BB42",
     White: "#FFFFFF"
   };
-  Summarize = () => {
-    let summ = 0;
-    for (let i = 0; i < this.state.bytes.length; i++){
-      summ = summ + this.state.bytes[i].value;
-
+  // Функция для умножеия (сдвиг эллементов массива на n)
+  Shift = (arr, n) => {
+    let shift =[];
+    for (let i = 0; i < arr.length + n; i++){
+      shift[i] = 0;
     }
-    const obj = {value: summ};
-    this.setState({result:obj});
+    for (let i = arr.length - 1; i >= 0; i--){
+      shift[i + n] = arr[i];
+    }
+    return shift;
   }
-  Multiply = () => {
-    let multy = 1;
-    for (let i = 0; i < this.state.bytes.length; i++){
-      if (this.state.bytes[i].value != 0){
-        multy = multy * this.state.bytes[i].value;
+//Двоичное умножение двух чисел
+  Multiply2nums = (arr1, arr2) => {
+    let multy = [];
+    for (let i = 0; i < arr1.length; i++){
+      if (arr2[i]){
+        let shift = this.Shift(arr1 , i);
+        let multyT = multy;
+        multy = this.Summarize2nums(shift,multyT);
       }
-      else{continue}
     }
-    const obj = {value: multy};
+    return multy;
+  }  
+//Двоичное умножение
+  Multiply = () => {
+    let ArrayI = [];
+    let multy = [];
+    //Подготовка массива (заполнение)
+    for (let i = 0; i < this.state.bytes.length; i++){
+      let ArrayJ = this.binarizeTEMP(this.state.bytes[i]);
+      ArrayI.push(ArrayJ);
+    }
+    //Умножение
+    if (ArrayI.length > 0){
+      multy = ArrayI[0];
+     for(let i = 1; i < ArrayI.length; i++){
+      multy = this.Multiply2nums(multy,ArrayI[i]);
+     }
+    }
+    console.log(multy);
+
+    let multyNum = 0;
+    for (let i = 0; i < multy.length; i++){
+        multyNum += multy[i] * Math.pow(2,i);
+    }
+    const obj = {value: multyNum};
     this.setState({result:obj});
   }
 
-  // Summarize = () => {
-  //   let ArrayI = [];
-  //   //Подготовка массива (заполнение)
-  //   for (let i = 0; i < this.state.bytes.length; i++){
-  //     let ArrayJ = [];
-  //     let temp = this.state.bytes[i].value;
-  //       for (let j = 0; j < 8; j++){
-  //         ArrayJ[j] = (temp % 2 === 0 ? 0 : 1);
-  //         temp = Math.floor(temp / 2);
-  //       }
-  //     ArrayI.push(ArrayJ);
-  //   }
-  //   //Сложение
-  //   let ArraySumm = [];
-  //   for (let i = 0; i < 8; i++){
-  //     ArraySumm[i] = ArrayI[0][i];
-  //   }
-  //   console.log(ArraySumm);
-  //   let temp = 0;
-  //   for (let i = 1; i < 8; i++){
-  //     for (let j = 0; j < 8; j++){
-  //       if (ArraySumm[j] === ArrayI[i][j] === 1){
-  //         if (temp === 1){ 
-  //           ArraySumm[j] = 1;
-  //         }
-  //         else{
-  //           ArraySumm[j] = 0; 
-  //           temp = 1;
-  //           }
-  //       }
-  //       else if (ArraySumm[j] === ArrayI[i][j] === 0){
-  //         if (temp === 1){
-  //            ArraySumm[j] = 1;
-  //            temp = 0; 
-  //           }
-  //         else{
-  //           ArraySumm[j] = 0; 
-  //           } 
-  //       }
-  //       else{
-  //         if (temp === 1){
-  //           ArraySumm[j] = 0;
-  //           temp = 1; 
-  //          }
-  //         else{
-  //           ArraySumm[j] = 1; 
-  //         } 
-  //       }
-  //       console.log(ArraySumm);
-  //     }
-  //     if (temp === 1){
-  //       for (let j = 8; j < ArraySumm.length ; j++){
-  //         if (temp === 1 ){
-  //           if (j === ArraySumm.length - 1){
-  //             ArraySumm.push(1);
-  //           }
-  //           else{
-  //             ArraySumm[j] = 1;
-  //           }
-  //         }
-  //       }
-  //     }
-  //     console.log(ArraySumm);
-  //   }
-    
+//Двоичное сложение двух чисел
+  Summarize2nums = (arr1, arr2) => {
+    let SummArr = [];
+    let temp = 0;
+    for (let j = 0; j < Math.max(arr1.length,arr2.length); j++){
+      if ((arr1[j] === arr2[j]) && (arr1[j] === 1)){
+        if (temp === 1) SummArr[j] = 1;
+        else{
+          SummArr[j] = 0; 
+          temp = 1;
+          }
+      }
+      else if (arr2[j] || arr1[j]){
+        if (temp === 1) SummArr[j] = 0;
+        else{
+          SummArr[j] = 1;
+          temp = 0; 
+        }
+      }
+      else{
+        if (temp === 1){
+          SummArr[j] = 1;
+          temp = 0; 
+         }
+        else SummArr[j] = 0; 
+      }
+    }
+    if (temp === 1) SummArr.push(1);
 
-  //   console.log(ArraySumm);
+    return SummArr;
+  }
+// Двоичное сложение всех чисел
+  Summarize = () => {
+    let ArrayI = [];
+    //Подготовка массива (заполнение)
+    for (let i = 0; i < this.state.bytes.length; i++){
+      let ArrayJ = this.binarizeTEMP(this.state.bytes[i]);
+      ArrayI.push(ArrayJ);
+    }
+    //Сложение
+    let ArraySumm = [];
+    for (let i = 0; i < ArrayI.length; i++){
+      ArraySumm = this.Summarize2nums(ArraySumm, ArrayI[i])
+    }
+    let deceit_Summ = 0;
+    for (let i = 0; i < ArraySumm.length; i++){
+      deceit_Summ += ArraySumm[i] * Math.pow(2,i);
+    }
+    console.log(ArraySumm);
+    const obj = {value: deceit_Summ};
+    this.setState({result:obj});
+  } 
 
-  //   // const obj = {value: summ[0]};
-  //   // this.setState({result:obj});
-  // } 
   binarize = byte => {
     let number = byte.value;
     const bits = [];
@@ -165,15 +174,17 @@ class Table extends Component {
     }
     return bits;
   };
+
   binarizeTEMP = byte => {
     let number = byte.value;
     const bits = [];
     for (let index = 0; index < 8; index++) {
-      bits.unshift(number % 2 === 0 ? 0 : 1 );
+      bits.push(number % 2 === 0 ? 0 : 1 );
       number = Math.floor(number / 2);
     }
     return bits;
   };
+
   binarizeResult = byte => {
     let number = byte.value;
     const bits = [];
